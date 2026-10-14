@@ -1,0 +1,29 @@
+flowchart TB
+  analyst["Analyst<br/>[Person]<br/>head office"]:::person
+  manager["Branch manager<br/>[Person]<br/>own branch only"]:::person
+  pos["Branch POS systems<br/>[External system, x3]"]:::external
+  mail["E-mail service<br/>[External system]"]:::external
+
+  subgraph boundary["Monthly Sales Report System"]
+    landing[("Landing zone<br/>[File system: data/yyyy-MM/*.csv]")]:::container
+    ingest["Ingest job<br/>[Java 25]<br/>validates files, checks SHA-256, quarantines bad rows"]:::container
+    batch["Report batch<br/>[Java 25]<br/>aggregation engine and renderers"]:::container
+    store[("Report store<br/>[File system: txt, html, csv, pdf, xlsx]")]:::container
+    desktop["Desktop viewer<br/>[JavaFX]<br/>analyst GUI"]:::container
+    web["Web report page<br/>[HTML + JS on a web server]<br/>per-branch access control"]:::container
+  end
+
+  pos -- "uploads daily CSV [SFTP]" --> landing
+  ingest -- "validates and checksums files [file system]" --> landing
+  batch -- "reads validated CSV [file system]" --> landing
+  batch -- "writes reports [file system]" --> store
+  desktop -- "reads reports [file system]" --> store
+  web -- "serves reports [file system]" --> store
+  analyst -- "views and exports [GUI]" --> desktop
+  analyst -- "views reports [HTTPS]" --> web
+  manager -- "views own branch report [HTTPS]" --> web
+  batch -- "sends report-ready e-mail [SMTP]" --> mail
+
+  classDef person fill:#08427b,color:#ffffff,stroke:#052e56
+  classDef container fill:#438dd5,color:#ffffff,stroke:#2e6295
+  classDef external fill:#8a8a8a,color:#ffffff,stroke:#6b6b6b
